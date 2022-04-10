@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Cinemachine;
 using Mirror;
 
 public class PlayerController : NetworkBehaviour
@@ -10,6 +11,7 @@ public class PlayerController : NetworkBehaviour
     public float jumpForce;
     public float speed;
 
+    private CinemachineVirtualCamera m_cam;
     private Animator m_anim;
     private CharacterController m_Controller;
     private bool m_CanJump = true;
@@ -17,6 +19,7 @@ public class PlayerController : NetworkBehaviour
     
     void Start()
     {
+        m_cam = playerCam.GetComponent<CinemachineVirtualCamera>();
         m_anim = GetComponent<Animator>();
         m_Controller = GetComponent<CharacterController>();
 
@@ -47,7 +50,17 @@ public class PlayerController : NetworkBehaviour
             m_YDir += gravity * Time.deltaTime;
             moveDir.y = m_YDir;
             m_Controller.Move(moveDir * speed * Time.deltaTime);
-            m_anim.SetFloat("Speed", m_Controller.velocity.magnitude);
+            float m_playerVel = m_Controller.velocity.magnitude;
+            m_anim.SetFloat("Speed", m_playerVel);
+            
+            if (m_playerVel > 5)
+            {
+                m_cam.m_Lens.FieldOfView = Mathf.Lerp(m_cam.m_Lens.FieldOfView, 90, Time.deltaTime * 5);
+            }
+            else
+            {
+                m_cam.m_Lens.FieldOfView = Mathf.Lerp(m_cam.m_Lens.FieldOfView, 75, Time.deltaTime * 5);
+            }
         }
     }
 

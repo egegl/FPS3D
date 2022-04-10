@@ -6,7 +6,8 @@ using Mirror;
 public class MouseLook : MonoBehaviour
 {
     public float mouseSens;
-
+    public Transform player;
+    
     private float m_xRot = 0f;
 
     void Start()
@@ -21,9 +22,9 @@ public class MouseLook : MonoBehaviour
         float mouseY = Input.GetAxis("Mouse Y") * mouseSens * Time.deltaTime;
 
         m_xRot -= mouseY;
-        m_xRot = Mathf.Clamp(m_xRot, -90, 90);
+        m_xRot = Mathf.Clamp(m_xRot, -75, 75);
 
         transform.localRotation = Quaternion.Euler(m_xRot, 0, 0);
-        transform.parent.Rotate(Vector3.up * mouseX);
+        player.Rotate(Vector3.up * mouseX);
     }
 }
