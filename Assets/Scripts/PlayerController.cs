@@ -1,57 +1,59 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Mirror;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : NetworkBehaviour
 {
-    public float jumpHeight;
+    public GameObject playerCam;
+    public float gravity = -9.8f;
+    public float jumpForce;
     public float speed;
-    public float mouseSens;
-    public Transform playerCam;
-    public Transform groundCheck;
-    public LayerMask groundLayer;
-    public CharacterController characterController;
 
-    private float m_xRot = 0f;
-    private float ground = 0.1f;
-    private float gravity = -9.8f;
-    private bool m_Grounded;
-    private Vector3 m_velocity;
+    private Animator m_anim;
+    private CharacterController m_Controller;
+    private bool m_CanJump = true;
+    private float m_YDir;
     
-    // Start is called before the first frame update
     void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;   
+        m_anim = GetComponent<Animator>();
+        m_Controller = GetComponent<CharacterController>();
+
+        if (isLocalPlayer)
+        {
+            playerCam.SetActive(true);
+        }
     }
 
-    // Update is called once per frame
     void Update()
     {
-        m_Grounded = Physics.CheckSphere(groundCheck.position, ground, groundLayer);
-        if (m_Grounded && m_velocity.y < 0)
+        if (isLocalPlayer)
         {
-            m_velocity.y = -2;
+            float x = Input.GetAxis("Horizontal");
+            float z = Input.GetAxis("Vertical");
+
+            Vector3 moveDir = transform.forward * z + transform.right * x;
+
+            if (m_Controller.isGrounded)
+            {
+                if (Input.GetButton("Jump") && m_CanJump)
+                {
+                    m_CanJump = false;
+                    m_YDir = jumpForce;
+                    StartCoroutine(JumpCooldown());
+                }
+            }
+            m_YDir += gravity * Time.deltaTime;
+            moveDir.y = m_YDir;
+            m_Controller.Move(moveDir * speed * Time.deltaTime);
+            m_anim.SetFloat("Speed", m_Controller.velocity.magnitude);
         }
+    }
 
-        if (Input.GetButtonDown("Jump") && m_Grounded)
-        {
-            m_velocity.y = Mathf.Sqrt(-2 * jumpHeight * gravity);
-        }
-
-        float mouseX = Input.GetAxis("Mouse X") * mouseSens * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSens * Time.deltaTime;
-        
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
-        
-        m_xRot -= mouseY;
-        m_xRot = Mathf.Clamp(m_xRot, -90f, 90f);
-        playerCam.localRotation = Quaternion.Euler(m_xRot, 0f, 0f);
-        transform.Rotate(Vector3.up * mouseX);
-
-        Vector3 move = transform.forward * z + transform.right * x;
-        characterController.Move(move * speed * Time.deltaTime);
-        m_velocity.y += gravity * Time.deltaTime;
-        characterController.Move(m_velocity * Time.deltaTime);
+    private IEnumerator JumpCooldown()
+    {
+        yield return new WaitForSeconds(0.3f);
+        m_CanJump = true;
     }
 }
